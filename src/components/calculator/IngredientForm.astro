@@ -1,0 +1,81 @@
+---
+import type { TranslationKeys } from '../../i18n/translations/hu.ts';
+import { siteConfig } from '../../config/site.config.ts';
+
+interface Props {
+  readonly t: TranslationKeys;
+}
+
+const { t } = Astro.props;
+const hasAutofill = siteConfig.features.ingredientDatabase;
+---
+
+<form id="ingredient-form" class="glass animate-slide-up rounded-2xl p-4 sm:p-5" autocomplete="off">
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div class="relative">
+      <input
+        id="input-name"
+        type="text"
+        required
+        placeholder=" "
+        class="peer w-full rounded-xl border border-surface-200 bg-surface-50 px-4 pb-2 pt-5 text-sm transition-colors duration-200 focus:border-primary-500 focus:bg-white dark:border-surface-700 dark:bg-surface-900 dark:focus:border-primary-400 dark:focus:bg-surface-800"
+        data-autofill={hasAutofill ? 'true' : undefined}
+      />
+      <label
+        for="input-name"
+        class="pointer-events-none absolute left-4 top-2 text-[10px] font-semibold uppercase tracking-wider text-surface-400 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-primary-500"
+      >
+        {t.form.ingredientName}
+      </label>
+      {hasAutofill && (
+        <div
+          id="autofill-dropdown"
+          class="absolute left-0 right-0 top-full z-10 mt-1 hidden max-h-40 overflow-y-auto rounded-xl border border-surface-200 bg-white shadow-lg dark:border-surface-700 dark:bg-surface-800"
+        ></div>
+      )}
+    </div>
+
+    <div class="relative">
+      <input
+        id="input-grams"
+        type="number"
+        required
+        min="0.1"
+        step="0.1"
+        placeholder=" "
+        class="peer w-full rounded-xl border border-surface-200 bg-surface-50 px-4 pb-2 pt-5 text-sm transition-colors duration-200 focus:border-primary-500 focus:bg-white dark:border-surface-700 dark:bg-surface-900 dark:focus:border-primary-400 dark:focus:bg-surface-800"
+      />
+      <label
+        for="input-grams"
+        class="pointer-events-none absolute left-4 top-2 text-[10px] font-semibold uppercase tracking-wider text-surface-400 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-primary-500"
+      >
+        {t.form.weight}
+      </label>
+    </div>
+
+    <div class="relative">
+      <input
+        id="input-kcal"
+        type="number"
+        required
+        min="0"
+        step="0.1"
+        placeholder=" "
+        class="peer w-full rounded-xl border border-surface-200 bg-surface-50 px-4 pb-2 pt-5 text-sm transition-colors duration-200 focus:border-primary-500 focus:bg-white dark:border-surface-700 dark:bg-surface-900 dark:focus:border-primary-400 dark:focus:bg-surface-800"
+      />
+      <label
+        for="input-kcal"
+        class="pointer-events-none absolute left-4 top-2 text-[10px] font-semibold uppercase tracking-wider text-surface-400 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-primary-500"
+      >
+        {t.form.kcalPer100g}
+      </label>
+    </div>
+  </div>
+
+  <button
+    type="submit"
+    class="mt-3 w-full rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:from-primary-600 hover:to-primary-700 hover:shadow-lg active:scale-[0.98] dark:from-primary-600 dark:to-primary-700 dark:hover:from-primary-500 dark:hover:to-primary-600"
+  >
+    {t.form.add}
+  </button>
+</form>

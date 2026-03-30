@@ -1,0 +1,8 @@
+---
+import { siteConfig } from '../config/site.config.ts';
+
+const defaultLocale = siteConfig.i18n.defaultLocale;
+const redirectUrl = `${siteConfig.site.base}/${defaultLocale}/`;
+
+return Astro.redirect(redirectUrl, 302);
+---

@@ -1,0 +1,93 @@
+---
+import type { TranslationKeys } from '../../i18n/translations/hu.ts';
+
+interface Props {
+  readonly t: TranslationKeys;
+}
+
+const { t } = Astro.props;
+---
+
+<button
+  id="theme-toggle"
+  type="button"
+  aria-label={t.theme.toggle}
+  title={t.theme.toggle}
+  class="relative flex items-center gap-1.5 rounded-full bg-surface-200 p-1 transition-colors duration-300 hover:bg-surface-300 dark:bg-surface-800 dark:hover:bg-surface-700"
+  data-label-system={t.theme.system}
+  data-label-light={t.theme.light}
+  data-label-dark={t.theme.dark}
+>
+  <span
+    class="theme-icon flex h-7 w-7 items-center justify-center rounded-full text-sm transition-all duration-300"
+    data-theme="system"
+    aria-hidden="true"
+  >
+    <svg class="icon-system h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+      <line x1="8" y1="21" x2="16" y2="21"></line>
+      <line x1="12" y1="17" x2="12" y2="21"></line>
+    </svg>
+    <svg class="icon-light hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+    <svg class="icon-dark hidden h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    </svg>
+  </span>
+  <span class="theme-label hidden pr-2 text-xs font-medium text-surface-600 sm:inline dark:text-surface-400">
+    {t.theme.system}
+  </span>
+</button>
+
+<script>
+  import { cycleTheme, getStoredTheme, initTheme } from '../../scripts/theme.ts';
+
+  function updateToggleUI(mode: string): void {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    const iconSystem = btn.querySelector('.icon-system');
+    const iconLight = btn.querySelector('.icon-light');
+    const iconDark = btn.querySelector('.icon-dark');
+    const label = btn.querySelector('.theme-label');
+
+    iconSystem?.classList.toggle('hidden', mode !== 'system');
+    iconLight?.classList.toggle('hidden', mode !== 'light');
+    iconDark?.classList.toggle('hidden', mode !== 'dark');
+
+    const labels: Record<string, string> = {
+      system: btn.dataset.labelSystem ?? 'System',
+      light: btn.dataset.labelLight ?? 'Light',
+      dark: btn.dataset.labelDark ?? 'Dark',
+    };
+
+    if (label) {
+      label.textContent = labels[mode] ?? labels['system'] ?? 'System';
+    }
+  }
+
+  function init(): void {
+    initTheme();
+    updateToggleUI(getStoredTheme());
+
+    document.getElementById('theme-toggle')?.addEventListener('click', () => {
+      const next = cycleTheme();
+      updateToggleUI(next);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

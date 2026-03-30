@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Calculator from '../../components/calculator/Calculator.astro';
+import HistoryPanel from '../../components/history/HistoryPanel.astro';
+import { useTranslations } from '../../i18n/index.ts';
+
+const locale = 'en' as const;
+const t = useTranslations(locale);
+---
+
+<BaseLayout
+  title={t.meta.title}
+  description={t.meta.description}
+  locale={locale}
+  t={t}
+>
+  <Calculator locale={locale} t={t} />
+  <HistoryPanel t={t} />
+</BaseLayout>

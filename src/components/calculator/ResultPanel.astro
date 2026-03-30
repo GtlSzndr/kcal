@@ -1,0 +1,69 @@
+---
+import type { TranslationKeys } from '../../i18n/translations/hu.ts';
+
+interface Props {
+  readonly t: TranslationKeys;
+}
+
+const { t } = Astro.props;
+---
+
+<div class="glass animate-slide-up stagger-2 mt-4 rounded-2xl p-4 sm:p-5">
+  <div class="relative mb-4">
+    <input
+      id="input-cooked-weight"
+      type="number"
+      min="0.1"
+      step="0.1"
+      placeholder=" "
+      class="peer w-full rounded-xl border border-surface-200 bg-surface-50 px-4 pb-2 pt-5 text-sm transition-colors duration-200 focus:border-accent-500 focus:bg-white dark:border-surface-700 dark:bg-surface-900 dark:focus:border-accent-400 dark:focus:bg-surface-800"
+    />
+    <label
+      for="input-cooked-weight"
+      class="pointer-events-none absolute left-4 top-2 text-[10px] font-semibold uppercase tracking-wider text-surface-400 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider peer-focus:text-accent-500"
+    >
+      {t.result.cookedWeight}
+    </label>
+  </div>
+
+  <div class="flex gap-2">
+    <button
+      id="btn-calculate"
+      type="button"
+      class="flex-1 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:from-accent-600 hover:to-accent-700 hover:shadow-lg active:scale-[0.98]"
+    >
+      {t.result.calculate}
+    </button>
+    <button
+      id="btn-clear"
+      type="button"
+      class="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium text-surface-600 transition-all duration-300 hover:bg-surface-100 active:scale-[0.98] dark:border-surface-700 dark:bg-surface-800 dark:text-surface-300 dark:hover:bg-surface-700"
+    >
+      {t.result.clear}
+    </button>
+  </div>
+
+  <div
+    id="result-display"
+    class="mt-4 hidden overflow-hidden rounded-xl bg-gradient-to-r from-primary-50 to-accent-50 dark:from-primary-900/30 dark:to-accent-900/30"
+  >
+    <div class="grid grid-cols-2 divide-x divide-primary-200 dark:divide-primary-700">
+      <div class="px-4 py-4 text-center">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">
+          {t.result.totalKcal}
+        </p>
+        <p id="result-total" class="font-display mt-1 text-2xl font-bold text-primary-700 dark:text-primary-300">
+          0
+        </p>
+      </div>
+      <div class="px-4 py-4 text-center">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:text-surface-500">
+          {t.result.per100g}
+        </p>
+        <p id="result-per100g" class="font-display mt-1 text-2xl font-bold text-accent-700 dark:text-accent-300">
+          0
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

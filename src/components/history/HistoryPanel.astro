@@ -1,0 +1,212 @@
+---
+import type { TranslationKeys } from '../../i18n/translations/hu.ts';
+import { siteConfig } from '../../config/site.config.ts';
+
+interface Props {
+  readonly t: TranslationKeys;
+}
+
+const { t } = Astro.props;
+const enabled = siteConfig.features.history;
+---
+
+{enabled && (
+  <div
+    class="animate-slide-up stagger-3 mt-6"
+    data-label-ingredients={t.history.ingredients}
+    data-label-cooked-weight={t.history.cookedWeight}
+    data-label-delete-day={t.history.deleteDay}
+    data-label-delete-meal={t.history.deleteMeal}
+    data-label-empty={t.history.empty}
+    data-label-clear-all={t.history.clearAll}
+    data-toast-cleared={t.toast.historyCleared}
+  >
+    <button
+      id="btn-toggle-history"
+      type="button"
+      class="flex w-full items-center justify-between rounded-2xl bg-surface-100 px-4 py-3 text-sm font-semibold text-surface-700 transition-all duration-300 hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300 dark:hover:bg-surface-700"
+    >
+      <span class="flex items-center gap-2">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        {t.history.toggle}
+      </span>
+      <svg id="history-chevron" class="h-4 w-4 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+
+    <div id="history-content" class="mt-2 hidden space-y-3">
+      <div id="history-list"></div>
+      <button
+        id="btn-clear-history"
+        type="button"
+        class="hidden w-full rounded-xl border border-danger-500/20 bg-danger-500/5 px-4 py-2.5 text-sm font-medium text-danger-500 transition-all duration-300 hover:bg-danger-500/10 active:scale-[0.98]"
+      >
+        {t.history.clearAll}
+      </button>
+    </div>
+  </div>
+)}
+
+<script>
+  import type { Meal } from '../../types/index.ts';
+  import {
+    getHistory,
+    deleteDayFromHistory,
+    deleteMealFromHistory,
+    clearHistory,
+  } from '../../scripts/storage.ts';
+  import { formatNumber } from '../../scripts/calculator.ts';
+  import { showToast } from '../../scripts/toast.ts';
+
+  function getLabel(key: string): string {
+    const wrapper = document.querySelector('[data-label-ingredients]');
+    return wrapper?.getAttribute(`data-label-${key}`) ?? key;
+  }
+
+  function renderHistory(): void {
+    const listEl = document.getElementById('history-list');
+    const clearBtn = document.getElementById('btn-clear-history');
+    if (!listEl || !clearBtn) return;
+
+    const history = getHistory();
+    const days = Object.keys(history).sort().reverse();
+
+    if (days.length === 0) {
+      listEl.innerHTML = `
+        <div class="flex flex-col items-center gap-2 rounded-2xl bg-surface-50 px-4 py-8 text-center dark:bg-surface-900">
+          <span class="text-3xl opacity-40">📋</span>
+          <p class="text-sm text-surface-400">${getLabel('empty')}</p>
+        </div>`;
+      clearBtn.classList.add('hidden');
+      return;
+    }
+
+    clearBtn.classList.remove('hidden');
+
+    listEl.innerHTML = days
+      .map((day) => {
+        const meals = history[day];
+        if (!meals) return '';
+
+        const mealsHtml = meals
+          .map((meal: Meal, idx: number) => {
+            const ingredientsList = meal.ingredients
+              .map((ing) => `<span class="inline-block rounded-full bg-surface-200 px-2 py-0.5 text-xs capitalize dark:bg-surface-700">${ing.name} (${formatNumber(ing.grams, 0)}g)</span>`)
+              .join(' ');
+
+            return `
+              <div class="group relative border-t border-surface-100 px-4 py-3 first:border-t-0 dark:border-surface-700">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-3">
+                      <span class="font-display text-lg font-bold text-primary-600 dark:text-primary-400">${formatNumber(meal.totalKcal)} kcal</span>
+                      <span class="text-xs text-surface-400">${formatNumber(meal.kcalPer100g)} kcal/100g</span>
+                    </div>
+                    <p class="mt-1 text-xs text-surface-400">${getLabel('cooked-weight')}: ${formatNumber(meal.cookedWeightGrams, 0)}g</p>
+                    <div class="mt-2 flex flex-wrap gap-1">${ingredientsList}</div>
+                  </div>
+                  <button
+                    type="button"
+                    data-delete-meal="${day}|${idx}"
+                    class="rounded-lg p-1.5 text-surface-300 opacity-0 transition-all hover:bg-danger-500/10 hover:text-danger-500 group-hover:opacity-100"
+                    aria-label="${getLabel('delete-meal')}"
+                    title="${getLabel('delete-meal')}"
+                  >
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>`;
+          })
+          .join('');
+
+        return `
+          <div class="glass animate-fade-in overflow-hidden rounded-2xl">
+            <div class="flex items-center justify-between bg-surface-100/50 px-4 py-2.5 dark:bg-surface-800/50">
+              <h3 class="font-display text-sm font-bold text-surface-700 dark:text-surface-300">${day}</h3>
+              <button
+                type="button"
+                data-delete-day="${day}"
+                class="rounded-lg p-1 text-xs text-surface-400 transition-colors hover:text-danger-500"
+                aria-label="${getLabel('delete-day')}"
+                title="${getLabel('delete-day')}"
+              >
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+            ${mealsHtml}
+          </div>`;
+      })
+      .join('');
+
+    listEl.querySelectorAll<HTMLButtonElement>('[data-delete-day]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const day = btn.dataset['deleteDay'] ?? '';
+        deleteDayFromHistory(day);
+        renderHistory();
+      });
+    });
+
+    listEl.querySelectorAll<HTMLButtonElement>('[data-delete-meal]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const parts = (btn.dataset['deleteMeal'] ?? '').split('|');
+        const day = parts[0] ?? '';
+        const idx = parseInt(parts[1] ?? '', 10);
+        if (!day || Number.isNaN(idx)) return;
+        deleteMealFromHistory(day, idx);
+        renderHistory();
+      });
+    });
+  }
+
+  function init(): void {
+    const toggleBtn = document.getElementById('btn-toggle-history');
+    const content = document.getElementById('history-content');
+    const chevron = document.getElementById('history-chevron');
+    const clearBtn = document.getElementById('btn-clear-history');
+
+    if (!toggleBtn || !content) return;
+
+    toggleBtn.addEventListener('click', () => {
+      const isOpen = !content.classList.contains('hidden');
+
+      if (isOpen) {
+        content.classList.add('hidden');
+        chevron?.classList.remove('rotate-180');
+      } else {
+        content.classList.remove('hidden');
+        chevron?.classList.add('rotate-180');
+        renderHistory();
+      }
+    });
+
+    clearBtn?.addEventListener('click', () => {
+      clearHistory();
+      renderHistory();
+      const wrapper = document.querySelector('[data-toast-cleared]');
+      const msg = wrapper?.getAttribute('data-toast-cleared') ?? 'Cleared';
+      showToast(msg, 'info');
+    });
+
+    window.addEventListener('history-updated', () => {
+      if (!content.classList.contains('hidden')) {
+        renderHistory();
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

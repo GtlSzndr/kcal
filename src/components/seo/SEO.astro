@@ -1,0 +1,89 @@
+---
+import type { Locale, SEOProps } from '../../types/index.ts';
+import { siteConfig } from '../../config/site.config.ts';
+import { getLocalizedPath } from '../../i18n/index.ts';
+
+interface Props extends SEOProps {}
+
+const { title, description, locale, canonicalUrl, ogImage, noIndex = false } = Astro.props;
+
+const siteUrl = siteConfig.site.url;
+const base = siteConfig.site.base;
+const resolvedCanonical = canonicalUrl ?? `${siteUrl}${getLocalizedPath(locale)}/`;
+const resolvedOgImage = ogImage ?? `${siteUrl}${base}/og-image.svg`;
+
+const localeMap: Record<Locale, string> = {
+  hu: 'hu_HU',
+  en: 'en_US',
+};
+
+const alternateLocales = siteConfig.i18n.locales.filter((l) => l !== locale);
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: title,
+  description,
+  url: resolvedCanonical,
+  applicationCategory: 'HealthApplication',
+  operatingSystem: 'Any',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+  inLanguage: siteConfig.i18n.locales.map((l) => localeMap[l]),
+};
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={resolvedCanonical} />
+<meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow'} />
+<meta name="author" content="GtlSzndr" />
+
+{siteConfig.i18n.locales.map((l) => (
+  <link
+    rel="alternate"
+    hreflang={l}
+    href={`${siteUrl}${getLocalizedPath(l)}/`}
+  />
+))}
+<link
+  rel="alternate"
+  hreflang="x-default"
+  href={`${siteUrl}${getLocalizedPath(siteConfig.i18n.defaultLocale)}/`}
+/>
+
+{siteConfig.seo.openGraph && (
+  <>
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={resolvedCanonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={resolvedOgImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={localeMap[locale]} />
+    {alternateLocales.map((l) => (
+      <meta property="og:locale:alternate" content={localeMap[l]} />
+    ))}
+    <meta property="og:site_name" content={siteConfig.site.title} />
+  </>
+)}
+
+{siteConfig.seo.twitterCards && (
+  <>
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={resolvedOgImage} />
+  </>
+)}
+
+{siteConfig.seo.structuredData && (
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(structuredData)}
+  />
+)}

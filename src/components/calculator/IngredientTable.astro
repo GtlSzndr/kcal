@@ -1,0 +1,40 @@
+---
+import type { TranslationKeys } from '../../i18n/translations/hu.ts';
+
+interface Props {
+  readonly t: TranslationKeys;
+}
+
+const { t } = Astro.props;
+---
+
+<div class="glass animate-slide-up stagger-1 mt-4 overflow-hidden rounded-2xl">
+  <div id="table-empty" class="flex flex-col items-center gap-2 px-4 py-10 text-center">
+    <span class="text-4xl opacity-40">🥗</span>
+    <p class="text-sm text-surface-400 dark:text-surface-500">{t.table.empty}</p>
+  </div>
+
+  <div id="table-wrapper" class="hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-surface-200 text-left text-[11px] font-semibold uppercase tracking-wider text-surface-400 dark:border-surface-700 dark:text-surface-500">
+          <th class="px-4 py-3">{t.table.name}</th>
+          <th class="px-4 py-3 text-right">{t.table.grams}</th>
+          <th class="px-4 py-3 text-right">{t.table.kcalPer100g}</th>
+          <th class="px-4 py-3 text-right">{t.table.kcal}</th>
+          <th class="w-10 px-2 py-3"></th>
+        </tr>
+      </thead>
+      <tbody id="ingredient-list" class="divide-y divide-surface-100 dark:divide-surface-800"></tbody>
+      <tfoot>
+        <tr class="border-t-2 border-primary-200 font-semibold dark:border-primary-800">
+          <td class="px-4 py-3 text-primary-700 dark:text-primary-300" colspan="3">
+            {t.table.total}
+          </td>
+          <td id="table-total-kcal" class="px-4 py-3 text-right text-primary-700 dark:text-primary-300">0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>

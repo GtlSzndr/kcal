@@ -1,0 +1,23 @@
+---
+import type { TranslationKeys } from '../../i18n/translations/hu.ts';
+
+interface Props {
+  readonly t: TranslationKeys;
+}
+
+const { t } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-12 border-t border-surface-200 dark:border-surface-800">
+  <div class="mx-auto max-w-2xl px-4 py-6 text-center text-sm text-surface-400 dark:text-surface-500">
+    <p>
+      {t.footer.madeWith}
+      <span class="mx-1 inline-block animate-pulse text-danger-500" aria-label="love">♥</span>
+      {t.footer.forHealthyEating}
+    </p>
+    <p class="mt-1 text-xs text-surface-300 dark:text-surface-600">
+      &copy; {year} Kcal Calculator
+    </p>
+  </div>
+</footer>

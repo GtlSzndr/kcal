@@ -1,0 +1,259 @@
+---
+import type { Locale } from '../../types/index.ts';
+import type { TranslationKeys } from '../../i18n/translations/hu.ts';
+import { siteConfig } from '../../config/site.config.ts';
+import IngredientForm from './IngredientForm.astro';
+import IngredientTable from './IngredientTable.astro';
+import ResultPanel from './ResultPanel.astro';
+
+interface Props {
+  readonly locale: Locale;
+  readonly t: TranslationKeys;
+}
+
+const { locale, t } = Astro.props;
+---
+
+<section
+  data-locale={locale}
+  data-toast-added={t.toast.ingredientAdded}
+  data-toast-calculated={t.toast.calculated}
+  data-toast-cleared={t.toast.cleared}
+  data-label-total={t.result.totalKcal}
+>
+  <IngredientForm t={t} />
+  <IngredientTable t={t} />
+  <ResultPanel t={t} />
+</section>
+
+<script>
+  import type { Ingredient } from '../../types/index.ts';
+  import {
+    calculateIngredientKcal,
+    calculateTotalKcal,
+    calculateKcalPer100g,
+    createMeal,
+    formatNumber,
+  } from '../../scripts/calculator.ts';
+  import {
+    saveIngredientToDatabase,
+    lookupIngredient,
+    getIngredientDatabase,
+    addMealToHistory,
+  } from '../../scripts/storage.ts';
+  import { showToast } from '../../scripts/toast.ts';
+
+  let ingredients: Ingredient[] = [];
+
+  function getEl<T extends HTMLElement>(id: string): T | null {
+    return document.getElementById(id) as T | null;
+  }
+
+  function renderTable(): void {
+    const tbody = getEl<HTMLTableSectionElement>('ingredient-list');
+    const emptyState = getEl<HTMLDivElement>('table-empty');
+    const wrapper = getEl<HTMLDivElement>('table-wrapper');
+    const totalEl = getEl<HTMLTableCellElement>('table-total-kcal');
+    if (!tbody || !emptyState || !wrapper || !totalEl) return;
+
+    const isEmpty = ingredients.length === 0;
+    emptyState.classList.toggle('hidden', !isEmpty);
+    wrapper.classList.toggle('hidden', isEmpty);
+
+    if (isEmpty) {
+      tbody.innerHTML = '';
+      totalEl.textContent = '0';
+      return;
+    }
+
+    tbody.innerHTML = ingredients
+      .map(
+        (ing, i) => `
+        <tr class="animate-fade-in group transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/50">
+          <td class="px-4 py-3 font-medium capitalize text-surface-800 dark:text-surface-200">${ing.name}</td>
+          <td class="px-4 py-3 text-right tabular-nums text-surface-600 dark:text-surface-400">${formatNumber(ing.grams, 0)}</td>
+          <td class="px-4 py-3 text-right tabular-nums text-surface-600 dark:text-surface-400">${formatNumber(ing.kcalPer100g, 0)}</td>
+          <td class="px-4 py-3 text-right tabular-nums font-medium text-surface-800 dark:text-surface-200">${formatNumber(calculateIngredientKcal(ing))}</td>
+          <td class="px-2 py-3 text-center">
+            <button
+              type="button"
+              data-remove="${i}"
+              class="rounded-lg p-1.5 text-surface-300 opacity-0 transition-all hover:bg-danger-500/10 hover:text-danger-500 group-hover:opacity-100"
+              aria-label="Remove"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </td>
+        </tr>`,
+      )
+      .join('');
+
+    totalEl.textContent = formatNumber(calculateTotalKcal(ingredients));
+
+    tbody.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset['remove'] ?? '', 10);
+        if (Number.isNaN(idx)) return;
+        ingredients = ingredients.filter((_, j) => j !== idx);
+        renderTable();
+      });
+    });
+  }
+
+  function handleFormSubmit(e: Event): void {
+    e.preventDefault();
+
+    const nameInput = getEl<HTMLInputElement>('input-name');
+    const gramsInput = getEl<HTMLInputElement>('input-grams');
+    const kcalInput = getEl<HTMLInputElement>('input-kcal');
+    if (!nameInput || !gramsInput || !kcalInput) return;
+
+    const name = nameInput.value.trim();
+    const grams = parseFloat(gramsInput.value);
+    const kcalPer100g = parseFloat(kcalInput.value);
+
+    if (!name || Number.isNaN(grams) || Number.isNaN(kcalPer100g)) return;
+    if (grams <= 0 || kcalPer100g < 0) return;
+
+    ingredients = [...ingredients, { name: name.toLowerCase(), grams, kcalPer100g }];
+    saveIngredientToDatabase(name, kcalPer100g);
+    renderTable();
+
+    nameInput.value = '';
+    gramsInput.value = '';
+    kcalInput.value = '';
+    nameInput.focus();
+
+    const section = nameInput.closest('section');
+    const toastMsg = section?.dataset['toastAdded'] ?? 'Added';
+    showToast(toastMsg);
+  }
+
+  function handleCalculate(): void {
+    const cookedInput = getEl<HTMLInputElement>('input-cooked-weight');
+    const resultDisplay = getEl<HTMLDivElement>('result-display');
+    const totalEl = getEl<HTMLElement>('result-total');
+    const per100gEl = getEl<HTMLElement>('result-per100g');
+    if (!cookedInput || !resultDisplay || !totalEl || !per100gEl) return;
+
+    const cookedWeight = parseFloat(cookedInput.value);
+    if (Number.isNaN(cookedWeight) || cookedWeight <= 0) return;
+    if (ingredients.length === 0) return;
+
+    const totalKcal = calculateTotalKcal(ingredients);
+    const per100g = calculateKcalPer100g(totalKcal, cookedWeight);
+
+    totalEl.textContent = formatNumber(totalKcal);
+    per100gEl.textContent = formatNumber(per100g);
+    resultDisplay.classList.remove('hidden');
+    resultDisplay.classList.add('animate-scale-in');
+
+    const meal = createMeal(ingredients, cookedWeight);
+    addMealToHistory(meal);
+
+    window.dispatchEvent(new CustomEvent('history-updated'));
+
+    const section = cookedInput.closest('section');
+    const toastMsg = section?.dataset['toastCalculated'] ?? 'Calculated';
+    showToast(toastMsg);
+  }
+
+  function handleClear(): void {
+    ingredients = [];
+    renderTable();
+
+    const cookedInput = getEl<HTMLInputElement>('input-cooked-weight');
+    const resultDisplay = getEl<HTMLDivElement>('result-display');
+    if (cookedInput) cookedInput.value = '';
+    if (resultDisplay) resultDisplay.classList.add('hidden');
+
+    const section = document.querySelector('section');
+    const toastMsg = section?.dataset['toastCleared'] ?? 'Cleared';
+    showToast(toastMsg, 'info');
+  }
+
+  function setupAutofill(): void {
+    const nameInput = getEl<HTMLInputElement>('input-name');
+    const kcalInput = getEl<HTMLInputElement>('input-kcal');
+    const dropdown = getEl<HTMLDivElement>('autofill-dropdown');
+    if (!nameInput || !kcalInput || !dropdown) return;
+
+    let isDropdownFocused = false;
+
+    function showSuggestions(): void {
+      if (!dropdown) return;
+      const query = nameInput?.value.trim().toLowerCase() ?? '';
+      const db = getIngredientDatabase();
+      const matches = Object.entries(db)
+        .filter(([name]) => name.includes(query))
+        .slice(0, 8);
+
+      if (matches.length === 0 || !query) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+
+      dropdown.innerHTML = matches
+        .map(
+          ([name, kcal]) =>
+            `<button type="button" data-name="${name}" data-kcal="${kcal}" class="flex w-full items-center justify-between px-3 py-2 text-left text-sm capitalize transition-colors hover:bg-primary-50 dark:hover:bg-primary-900/30">
+              <span>${name}</span>
+              <span class="text-xs text-surface-400">${kcal} kcal/100g</span>
+            </button>`,
+        )
+        .join('');
+
+      dropdown.classList.remove('hidden');
+
+      dropdown.querySelectorAll<HTMLButtonElement>('button').forEach((btn) => {
+        btn.addEventListener('mousedown', () => { isDropdownFocused = true; });
+        btn.addEventListener('click', () => {
+          if (nameInput) nameInput.value = btn.dataset['name'] ?? '';
+          if (kcalInput) kcalInput.value = btn.dataset['kcal'] ?? '';
+          dropdown.classList.add('hidden');
+          isDropdownFocused = false;
+          const gramsInput = getEl<HTMLInputElement>('input-grams');
+          gramsInput?.focus();
+        });
+      });
+    }
+
+    nameInput.addEventListener('input', showSuggestions);
+    nameInput.addEventListener('focus', showSuggestions);
+    nameInput.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (!isDropdownFocused) dropdown.classList.add('hidden');
+        isDropdownFocused = false;
+      }, 150);
+    });
+
+    nameInput.addEventListener('blur', () => {
+      const name = nameInput.value.trim().toLowerCase();
+      if (!name) return;
+      const stored = lookupIngredient(name);
+      if (stored !== undefined && !kcalInput.value) {
+        kcalInput.value = String(stored);
+      }
+    });
+  }
+
+  function init(): void {
+    ingredients = [];
+    renderTable();
+
+    getEl<HTMLFormElement>('ingredient-form')?.addEventListener('submit', handleFormSubmit);
+    getEl<HTMLButtonElement>('btn-calculate')?.addEventListener('click', handleCalculate);
+    getEl<HTMLButtonElement>('btn-clear')?.addEventListener('click', handleClear);
+
+    setupAutofill();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>
