@@ -70,7 +70,7 @@ const { locale, t } = Astro.props;
       .map(
         (ing, i) => `
         <tr class="animate-fade-in group transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/50">
-          <td class="px-4 py-3 font-medium capitalize text-surface-800 dark:text-surface-200">${ing.name}</td>
+          <td class="truncate px-4 py-3 font-medium capitalize text-surface-800 dark:text-surface-200">${ing.name}</td>
           <td class="px-4 py-3 text-right tabular-nums text-surface-600 dark:text-surface-400">${formatNumber(ing.grams, 0)}</td>
           <td class="px-4 py-3 text-right tabular-nums text-surface-600 dark:text-surface-400">${formatNumber(ing.kcalPer100g, 0)}</td>
           <td class="px-4 py-3 text-right tabular-nums font-medium text-surface-800 dark:text-surface-200">${formatNumber(calculateIngredientKcal(ing))}</td>
